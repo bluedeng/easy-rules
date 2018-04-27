@@ -1,7 +1,7 @@
 /**
  * The MIT License
  *
- *  Copyright (c) 2017, Mahmoud Ben Hassine (mahmoud.benhassine@icloud.com)
+ *  Copyright (c) 2018, Mahmoud Ben Hassine (mahmoud.benhassine@icloud.com)
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -119,13 +119,13 @@ class RuleDefinitionValidator {
     private boolean validParameters(final Method method) {
         int notAnnotatedParameterCount = 0;
         Annotation[][] parameterAnnotations = method.getParameterAnnotations();
-        for(Annotation[] anns : parameterAnnotations){
-            if(anns.length == 0){
+        for(Annotation[] annotations : parameterAnnotations){
+            if(annotations.length == 0){
                 notAnnotatedParameterCount += 1;
             } else {
                 //Annotation types has to be Fact
-                for(Annotation ann : anns){
-                    if(!ann.annotationType().equals(Fact.class)){
+                for(Annotation annotation : annotations){
+                    if(!annotation.annotationType().equals(Fact.class)){
                         return false;
                     }
                 }

@@ -1,7 +1,7 @@
 /**
  * The MIT License
  *
- *  Copyright (c) 2017, Mahmoud Ben Hassine (mahmoud.benhassine@icloud.com)
+ *  Copyright (c) 2018, Mahmoud Ben Hassine (mahmoud.benhassine@icloud.com)
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -21,36 +21,65 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
  */
-package org.jeasy.rules.core;
+package org.jeasy.rules.support;
 
 import org.jeasy.rules.annotation.Action;
 import org.jeasy.rules.annotation.Condition;
-import org.jeasy.rules.annotation.Rule;
+import org.jeasy.rules.api.Facts;
+import org.jeasy.rules.api.Rule;
+import org.jeasy.rules.api.Rules;
+import org.jeasy.rules.core.*;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-public class CompositeRuleTest extends AbstractTest {
+@RunWith(MockitoJUnitRunner.class)
+public class UnitRuleGroupTest {
 
-    private CompositeRule compositeRule;
+    @Mock
+    private Rule rule1, rule2;
+
+    private Facts facts = new Facts();
+    private Rules rules = new Rules();
+
+    private DefaultRulesEngine rulesEngine = new DefaultRulesEngine();
+
+    private org.jeasy.rules.support.UnitRuleGroup unitRuleGroup;
+
 
     @Before
-    public void setup() throws Exception {
-        super.setup();
+    public void setUp() throws Exception {
         when(rule1.evaluate(facts)).thenReturn(true);
         when(rule2.evaluate(facts)).thenReturn(true);
         when(rule2.compareTo(rule1)).thenReturn(1);
-        compositeRule = new CompositeRule();
+    }
+
+    @Test
+    public void whenNoComposingRulesAreRegistered_thenUnitRuleGroupShouldEvaluateToFalse() {
+        // given
+        unitRuleGroup = new UnitRuleGroup();
+
+        // when
+        boolean evaluationResult = unitRuleGroup.evaluate(facts);
+
+        // then
+        assertThat(evaluationResult).isFalse();
     }
 
     @Test
     public void compositeRuleAndComposingRulesMustBeExecuted() throws Exception {
         // Given
-        compositeRule.addRule(rule1);
-        compositeRule.addRule(rule2);
-        rules.register(compositeRule);
+        unitRuleGroup = new UnitRuleGroup();
+        unitRuleGroup.addRule(rule1);
+        unitRuleGroup.addRule(rule2);
+        rules.register(unitRuleGroup);
 
         // When
         rulesEngine.fire(rules, facts);
@@ -60,13 +89,12 @@ public class CompositeRuleTest extends AbstractTest {
         verify(rule2).execute(facts);
     }
 
-    @Test
     public void compositeRuleMustNotBeExecutedIfAComposingRuleEvaluatesToFalse() throws Exception {
         // Given
         when(rule2.evaluate(facts)).thenReturn(false);
-        compositeRule.addRule(rule1);
-        compositeRule.addRule(rule2);
-        rules.register(compositeRule);
+        unitRuleGroup.addRule(rule1);
+        unitRuleGroup.addRule(rule2);
+        rules.register(unitRuleGroup);
 
         // When
         rulesEngine.fire(rules, facts);
@@ -86,10 +114,11 @@ public class CompositeRuleTest extends AbstractTest {
     @Test
     public void whenARuleIsRemoved_thenItShouldNotBeEvaluated() throws Exception {
         // Given
-        compositeRule.addRule(rule1);
-        compositeRule.addRule(rule2);
-        compositeRule.removeRule(rule2);
-        rules.register(compositeRule);
+        unitRuleGroup = new UnitRuleGroup();
+        unitRuleGroup.addRule(rule1);
+        unitRuleGroup.addRule(rule2);
+        unitRuleGroup.removeRule(rule2);
+        rules.register(unitRuleGroup);
 
         // When
         rulesEngine.fire(rules, facts);
@@ -101,21 +130,15 @@ public class CompositeRuleTest extends AbstractTest {
         //Rule 2 should not be evaluated nor executed
         verify(rule2, never()).evaluate(facts);
         verify(rule2, never()).execute(facts);
-
-    }
-
-    @Test
-    public void whenNoComposingRulesAreRegistered_thenCompositeRuleShouldEvaluateToFalse() {
-        assertThat(compositeRule.evaluate(facts)).isFalse();
     }
 
     @Test
     public void testCompositeRuleWithAnnotatedComposingRules() throws Exception {
         // Given
         MyRule rule = new MyRule();
-        compositeRule = new CompositeRule("myCompositeRule");
-        compositeRule.addRule(rule);
-        rules.register(compositeRule);
+        unitRuleGroup = new UnitRuleGroup();
+        unitRuleGroup.addRule(rule);
+        rules.register(unitRuleGroup);
 
         // When
         rulesEngine.fire(rules, facts);
@@ -129,11 +152,11 @@ public class CompositeRuleTest extends AbstractTest {
         // Given
         MyRule rule = new MyRule();
         MyAnnotatedRule annotatedRule = new MyAnnotatedRule();
-        compositeRule = new CompositeRule("myCompositeRule", "composite rule with mixed types of rules");
-        compositeRule.addRule(rule);
-        compositeRule.addRule(annotatedRule);
-        compositeRule.removeRule(annotatedRule);
-        rules.register(compositeRule);
+        unitRuleGroup = new UnitRuleGroup();
+        unitRuleGroup.addRule(rule);
+        unitRuleGroup.addRule(annotatedRule);
+        unitRuleGroup.removeRule(annotatedRule);
+        rules.register(unitRuleGroup);
 
         // When
         rulesEngine.fire(rules, facts);
@@ -143,8 +166,8 @@ public class CompositeRuleTest extends AbstractTest {
         assertThat(annotatedRule.isExecuted()).isFalse();
     }
 
-    @Rule
-    class MyRule {
+    @org.jeasy.rules.annotation.Rule
+    public class MyRule {
         boolean executed;
         @Condition
         public boolean when() {
@@ -159,8 +182,8 @@ public class CompositeRuleTest extends AbstractTest {
         }
     }
 
-    @Rule
-    static class MyAnnotatedRule {
+    @org.jeasy.rules.annotation.Rule
+    public static class MyAnnotatedRule {
         private boolean executed;
         @Condition
         public boolean evaluate() {

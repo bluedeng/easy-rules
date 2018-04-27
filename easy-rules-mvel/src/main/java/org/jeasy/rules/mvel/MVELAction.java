@@ -1,7 +1,7 @@
 /**
  * The MIT License
  *
- *  Copyright (c) 2017, Mahmoud Ben Hassine (mahmoud.benhassine@icloud.com)
+ *  Copyright (c) 2018, Mahmoud Ben Hassine (mahmoud.benhassine@icloud.com)
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -38,7 +38,7 @@ import java.io.Serializable;
  */
 public class MVELAction implements Action {
 
-    private static Logger LOGGER = LoggerFactory.getLogger(MVELAction.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MVELAction.class);
 
     private String expression;
     private Serializable compiledExpression;
